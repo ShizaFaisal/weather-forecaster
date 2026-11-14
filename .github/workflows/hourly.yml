@@ -1,0 +1,27 @@
+name: hourly-ingest-and-agents
+on:
+  schedule: [{cron: "7 * * * *"}]
+  workflow_dispatch:
+concurrency: {group: hourly, cancel-in-progress: false}
+permissions: {contents: read, actions: write}
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
+      HOPSWORKS_PROJECT: ${{ secrets.HOPSWORKS_PROJECT }}
+      OPENWEATHER_API_KEY: ${{ secrets.OPENWEATHER_API_KEY }}
+      AQICN_API_TOKEN: ${{ secrets.AQICN_API_TOKEN }}
+      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+      TEAM_WEBHOOK_URL: ${{ secrets.TEAM_WEBHOOK_URL }}
+      GH_DISPATCH_TOKEN: ${{ secrets.GH_DISPATCH_TOKEN || github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.11", cache: pip}
+      - run: pip install pandas numpy scipy scikit-learn statsmodels langgraph requests joblib "hopsworks[python]"
+      - name: Ingest + feature pipeline
+        run: python scripts/feature_pipeline.py
+      - name: Agents (forecast -> alert -> report -> drift)
+        run: python scripts/run_agents.py

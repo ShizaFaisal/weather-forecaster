@@ -1,0 +1,16 @@
+name: backfill
+on:
+  workflow_dispatch:
+    inputs: {days: {description: "days of history", default: "180"}}
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    env:
+      HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
+      HOPSWORKS_PROJECT: ${{ secrets.HOPSWORKS_PROJECT }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.11", cache: pip}
+      - run: pip install pandas numpy scipy scikit-learn requests joblib "hopsworks[python]"
+      - run: python scripts/backfill.py --days ${{ github.event.inputs.days }}
